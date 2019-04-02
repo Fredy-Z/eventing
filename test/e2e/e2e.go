@@ -45,6 +45,9 @@ const (
 
 	interval = 1 * time.Second
 	timeout  = 1 * time.Minute
+
+	// After we get the right log content, we want to double check several times to make sure no new logs come in, which is incorrect
+	doubleCheckTimes = 3
 )
 
 // Setup creates the client objects needed in the e2e tests.
@@ -386,7 +389,7 @@ func WaitForLogContents(clients *test.Clients, logf logging.FormatLogger, podNam
 
 // WaitForLogContentCount checks if the number of substr occur times equals the given number.
 // If the content does not appear the given times it returns error.
-// If the content appears the given times, wait for 3*interval to make sure there is no new such content.
+// If the content appears the given times, wait for doubleCheckTimes*interval to make sure there is no new such content.
 func WaitForLogContentCount(client *test.Clients, podName, containerName, content string, appearTimes int) error {
 	i := 0
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
@@ -398,7 +401,7 @@ func WaitForLogContentCount(client *test.Clients, podName, containerName, conten
 		if strings.Count(string(logs), content) == appearTimes {
 			i++
 		}
-		if i == 3 {
+		if i == doubleCheckTimes {
 			return true, nil
 		}
 		return false, nil

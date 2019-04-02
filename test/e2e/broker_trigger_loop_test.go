@@ -28,11 +28,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-// This test annotates the testing namespace so that a default broker is created.
-// It then binds one trigger with default filters to that default broker.
-// The trigger sends the received events to a subscriber, which replies the events directly back.
-// Then it sends one single event to the broker's address.
-// Finally, it verifies that the subscriber receives exactly 10 such events.
+/*
+This test annotates the testing namespace so that a default broker is created.
+It then binds one trigger with default filter to that default broker.
+Then it sends one single event to the broker's address.
+After the trigger receives the event, it sends it to a subscriber, which replies the event directly back.
+Finally, it verifies that the subscriber receives exactly 10 such events.
+
+             1           2            3
+EventSource ---> Broker ---> Trigger ---> Service
+					^		   | ^           |
+				    |----------| |-----------|
+                          5            4
+
+*/
 func TestBrokerTriggerWithLoop(t *testing.T) {
 	const (
 		maxDuplicateEventCount = 10
@@ -44,9 +53,7 @@ func TestBrokerTriggerWithLoop(t *testing.T) {
 		subscriberRouteName = "end2end-test-router"
 		selectorKey         = "end2end-test-broker-trigger-loop"
 
-		any         = v1alpha1.TriggerAnyFilter
-		eventType   = "type"
-		eventSource = "source"
+		any = v1alpha1.TriggerAnyFilter
 	)
 
 	clients, cleaner := Setup(t, t.Logf)
@@ -64,7 +71,7 @@ func TestBrokerTriggerWithLoop(t *testing.T) {
 	}
 	t.Logf("Namespace %s annotated", ns)
 
-	// Wait for default broker ready.
+	// Wait for default broker to be ready.
 	t.Logf("Waiting for default broker to be ready")
 	defaultBroker := test.Broker(defaultBrokerName, ns)
 	if err := WaitForBrokerReady(clients, defaultBroker); err != nil {
@@ -115,11 +122,11 @@ func TestBrokerTriggerWithLoop(t *testing.T) {
 	// send fake CloudEvent to the Broker
 	body := fmt.Sprintf("TestBrokerTriggerLoop %s", uuid.NewUUID())
 	if err := SendFakeEventToAddressable(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, defaultBrokerUrl, ns, t.Logf, cleaner); err != nil {
-		t.Fatal("Failed to send fake CloudEvent to the Broker: %v", err)
+		t.Fatalf("Failed to send fake CloudEvent to the Broker: %v", err)
 	}
 
 	// check if the logging service receives the correct number of event messages
 	if err := WaitForLogContentCount(clients, subscriberPodName, subscriberPod.Spec.Containers[0].Name, body, maxDuplicateEventCount); err != nil {
-		t.Fatalf("String %q not found in logs of subscriber pod %q: %v", body, subscriberPodName, err)
+		t.Fatalf("String %q does not appear %d times in logs of subscriber pod %q: %v", body, maxDuplicateEventCount, subscriberPodName, err)
 	}
 }
