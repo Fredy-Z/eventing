@@ -35,6 +35,8 @@ import (
 // Finally, it verifies that the subscriber receives exactly 10 such events.
 func TestBrokerTriggerWithLoop(t *testing.T) {
 	const (
+		maxDuplicateEventCount = 10
+
 		defaultBrokerName   = "default"
 		senderName          = "end2end-test-sender"
 		triggerName         = "end2end-test-trigger"
@@ -112,10 +114,12 @@ func TestBrokerTriggerWithLoop(t *testing.T) {
 	t.Logf("Creating event sender pod")
 	// send fake CloudEvent to the Broker
 	body := fmt.Sprintf("TestBrokerTriggerLoop %s", uuid.NewUUID())
-	SendFakeEventToAddressable(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, defaultBrokerUrl, ns, t.Logf, cleaner)
+	if err := SendFakeEventToAddressable(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, defaultBrokerUrl, ns, t.Logf, cleaner); err != nil {
+		t.Fatal("Failed to send fake CloudEvent to the Broker: %v", err)
+	}
 
 	// check if the logging service receives the correct number of event messages
-	if err := WaitForLogContentCount(clients, subscriberPodName, subscriberPod.Spec.Containers[0].Name, body, 10); err != nil {
+	if err := WaitForLogContentCount(clients, subscriberPodName, subscriberPod.Spec.Containers[0].Name, body, maxDuplicateEventCount); err != nil {
 		t.Fatalf("String %q not found in logs of subscriber pod %q: %v", body, subscriberPodName, err)
 	}
 }

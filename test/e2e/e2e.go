@@ -386,14 +386,22 @@ func WaitForLogContents(clients *test.Clients, logf logging.FormatLogger, podNam
 
 // WaitForLogContentCount checks if the number of substr occur times equals the given number.
 // If the content does not appear the given times it returns error.
+// If the content appears the given times, wait for 3*interval to make sure there is no new such content.
 func WaitForLogContentCount(client *test.Clients, podName, containerName, content string, appearTimes int) error {
+	i := 0
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 		logs, err := client.Kube.PodLogs(podName, containerName)
 		if err != nil {
 			return true, err
 		}
 
-		return strings.Count(string(logs), content) == appearTimes, nil
+		if strings.Count(string(logs), content) == appearTimes {
+			i++
+		}
+		if i == 3 {
+			return true, nil
+		}
+		return false, nil
 	})
 }
 
