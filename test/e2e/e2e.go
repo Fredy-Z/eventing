@@ -342,8 +342,8 @@ func CreatePod(clients *test.Clients, pod *corev1.Pod, _ logging.FormatLogger, c
 	return nil
 }
 
-// SendFakeEventToChannel will create fake CloudEvent and send it to the given channel
-func SendFakeEventToChannel(clients *test.Clients, senderName string, body string, eventType string, encoding string, channel *v1alpha1.Channel, ns string, logf logging.FormatLogger, cleaner *test.Cleaner) error {
+// SendFakeEventToAddressable will create fake CloudEvent and send it to the given url of an Addressable (can possibly be a Broker, Channel or Service)
+func SendFakeEventToAddressable(clients *test.Clients, senderName string, body string, eventType string, encoding string, url string, ns string, logf logging.FormatLogger, cleaner *test.Cleaner) error {
 	logf("Sending fake CloudEvent")
 	logf("Creating event sender pod")
 	event := test.CloudEvent{
@@ -352,7 +352,6 @@ func SendFakeEventToChannel(clients *test.Clients, senderName string, body strin
 		Data:     fmt.Sprintf(`{"msg":%q}`, body),
 		Encoding: test.CloudEventDefaultEncoding,
 	}
-	url := fmt.Sprintf("http://%s", channel.Status.Address.Hostname)
 	pod := test.EventSenderPod(senderName, ns, url, event)
 	logf("sender pod: %#v", pod)
 	if err := CreatePod(clients, pod, logf, cleaner); err != nil {

@@ -114,7 +114,8 @@ func TestEventTransformation(t *testing.T) {
 
 	// send fake CloudEvent to the first channel
 	body := fmt.Sprintf("TestEventTransformation %s", uuid.NewUUID())
-	SendFakeEventToChannel(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, channels[0], ns, t.Logf, cleaner)
+	url := fmt.Sprintf("http://%s", channels[0].Status.Address.Hostname)
+	SendFakeEventToAddressable(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, url, ns, t.Logf, cleaner)
 
 	// check if the logging service receives the correct number of event messages
 	if err := WaitForLogContentCount(clients, subscriberPods[1].Name, subscriberPods[1].Spec.Containers[0].Name, body+msgPostfix, len(subscriptionNames1)*len(subscriptionNames2)); err != nil {

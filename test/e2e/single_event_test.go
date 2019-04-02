@@ -85,7 +85,8 @@ func SingleEvent(t *testing.T, encoding string) {
 
 	// send fake CloudEvent to the first channel
 	body := fmt.Sprintf("TestSingleEvent %s", uuid.NewUUID())
-	SendFakeEventToChannel(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, channel, ns, t.Logf, cleaner)
+	url := fmt.Sprintf("http://%s", channel.Status.Address.Hostname)
+	SendFakeEventToAddressable(clients, senderName, body, test.CloudEventDefaultType, test.CloudEventDefaultEncoding, url, ns, t.Logf, cleaner)
 
 	if err := pkgTest.WaitForLogContent(clients.Kube, routeName, subscriberPod.Spec.Containers[0].Name, body); err != nil {
 		clients.Kube.PodLogs(senderName, "sendevent")
