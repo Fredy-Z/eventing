@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package resources
 
-// resources_eventing contains functions that construct Eventing resources.
+// eventing contains functions that construct Eventing resources.
 
 import (
 	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"

@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package resources
 
-// resources_messaging contains functions that construct Messaging resources.
+// messaging contains functions that construct Messaging resources.
 
 import (
 	kafkamessagingv1alpha1 "github.com/knative/eventing/contrib/kafka/pkg/apis/messaging/v1alpha1"

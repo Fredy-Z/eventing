@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package resources
 
-// resources_sources contains functions that construct Sources resources.
+// sources contains functions that construct Sources resources.
 
 import (
 	sourcesv1alpha1 "github.com/knative/eventing/pkg/apis/sources/v1alpha1"

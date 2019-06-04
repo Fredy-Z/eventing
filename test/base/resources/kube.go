@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package resources
 
-// resources_kube contains functions that construct common Kubernetes resources.
+// kube contains functions that construct common Kubernetes resources.
 
 import (
 	"fmt"

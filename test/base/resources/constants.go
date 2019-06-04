@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package resources
 
-import "github.com/knative/eventing/pkg/reconciler/namespace/resources"
+import eventingresources "github.com/knative/eventing/pkg/reconciler/namespace/resources"
 
 const (
 	// DefaultBrokerName is the name of the Broker that is automatically created after the current namespace is labeled.
-	DefaultBrokerName = resources.DefaultBrokerName
+	DefaultBrokerName = eventingresources.DefaultBrokerName
 
 	// InMemoryProvisioner is the in-memory provisioner, which is also the default one.
 	InMemoryProvisioner = "in-memory"
