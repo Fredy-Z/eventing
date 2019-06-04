@@ -34,10 +34,10 @@ var rbacAPIVersion = rbacv1.SchemeGroupVersion.Version
 // TODO(Fredy-Z): This is a workaround when there are both provisioner and Channel CRDs in this repo.
 //                isCRD needs to be deleted when the provisioner implementation is removed.
 func (client *Client) CreateChannelOrFail(name string, channelTypeMeta *metav1.TypeMeta, provisionerName string) {
-	if channelTypeMeta.Kind == base.ChannelKind {
-		namespace := client.Namespace
+	namespace := client.Namespace
+	switch channelTypeMeta.Kind {
+	case base.ChannelKind:
 		channel := base.Channel(name, provisionerName)
-
 		channels := client.Eventing.EventingV1alpha1().Channels(namespace)
 		// update channel with the new reference
 		channel, err := channels.Create(channel)
@@ -45,19 +45,20 @@ func (client *Client) CreateChannelOrFail(name string, channelTypeMeta *metav1.T
 			client.T.Fatalf("Failed to create channel %q: %v", name, err)
 		}
 		client.Cleaner.AddObj(channel)
-	} else {
-		client.createChannelCROrFail(name, channelTypeMeta)
-	}
-}
-
-func (client *Client) createChannelCROrFail(name string, channelTypeMeta *metav1.TypeMeta) {
-	namespace := client.Namespace
-	if channelTypeMeta.Kind == base.KafkaChannelKind {
+	case base.InMemoryChannelKind:
+		channel := base.InMemoryChannel(name)
+		channels := client.Eventing.MessagingV1alpha1().InMemoryChannels(namespace)
+		channel, err := channels.Create(channel)
+		if err != nil {
+			client.T.Fatalf("Failed to create %q %q: %v", channelTypeMeta.Kind, name, err)
+		}
+		client.Cleaner.AddObj(channel)
+	case base.KafkaChannelKind:
 		channel := base.KafkaChannel(name)
 		channels := client.KafkaChannel.MessagingV1alpha1().KafkaChannels(namespace)
 		channel, err := channels.Create(channel)
 		if err != nil {
-			client.T.Fatalf("Failed to create channel CR %q: %v", name, err)
+			client.T.Fatalf("Failed to create %q %q: %v", channelTypeMeta.Kind, name, err)
 		}
 		client.Cleaner.AddObj(channel)
 	}
