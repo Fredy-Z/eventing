@@ -90,21 +90,20 @@ data:
   environment: prod
 EOF
 
-  echo ">> Deleting all benchmark jobs to avoid noise"
+  echo ">> Deleting all benchmark jobs to avoid noise in the update process"
   kubectl delete cronjob --all
   kubectl delete job --all
   
   if function_exists update_knative; then
     update_knative || abort "failed to update knative"
   fi
-  # get benchmark_name by removing the prefix from cluster name, e.g. get "load-test" from "serving-load-test"
-  local benchmark_name=${1#$REPO_NAME"-"}
+  local benchmark_name=$(get_benchmark_name $1)
   if function_exists update_benchmark; then
     update_benchmark ${BENCHMARK_ROOT_PATH}/${benchmark_name} || abort "failed to update benchmark"
   fi
 }
 
-# Create a new cluster and create required secrets on it.
+# Create a new cluster and do necessary setups.
 # Parameters: $1 - cluster name
 #             $2 - cluster zone/region
 #             $3 - cluster node num
@@ -119,13 +118,13 @@ function create_new_cluster() {
   update_cluster $1 $2 || abort "failed to update the cluster"
 }
 
-# Create a new cluster for the benchmark and do necessary setup.
+# Create a new cluster for the benchmark and do necessary setups.
 # Parameters: $1 - benchmark name
 function create_new_benchmark_cluster() {
   local benchmark_path="${BENCHMARK_ROOT_PATH}/$1"
   [ ! -d ${benchmark_path} ] && abort "benchmark $1 does not exist"
-  # cluster_name is [repo_name]-[benchmark_name], e.g. serving-load-test  
-  local cluster_name="${REPO_NAME}-$1"
+  #   
+  local cluster_name=$(get_cluster_name $1)
   local cluster_region="${CLUSTER_REGION}"
   local node_count="${CLUSTER_NODES}"
   local config_file_path="${benchmark_path}/${CLUSTER_CONFIG_FILE}"
@@ -140,12 +139,27 @@ function create_new_benchmark_cluster() {
   create_new_cluster ${cluster_name} ${cluster_region} ${node_count}
 }
 
+# Get the value for the given key from the config file, return default value if not found.
 # Parameters: $1 - config file path
 #             $2 - config name
 #             $3 - default value
 function get_config_value() {
   local value=$(grep $2 $1 | cut -d'=' -f2)
   echo ${value:-$3}
+}
+
+# Get benchmark name from the cluster name.
+# Parameters: $1 - cluster name
+function get_benchmark_name() {
+  # get benchmark_name by removing the prefix from cluster name, e.g. get "load-test" from "serving-load-test"
+  echo ${1#$REPO_NAME"-"}
+}
+
+# Get cluster name from the benchmark name.
+# Parameters: $1 - benchmark name
+function get_cluster_name() {
+  # cluster_name is [repo_name]-[benchmark_name], e.g. serving-load-test
+  echo "${REPO_NAME}-$1"
 }
 
 # Delete the old clusters related to the current repo, and recreate them with the same configuration.
@@ -160,6 +174,8 @@ function recreate_clusters() {
     [[ ! ${name} =~ ^${REPO_NAME} ]] && continue
     local zone=$(echo "${cluster}" | cut -f2 -d",")
     local node_count=$(echo "${cluster}" | cut -f3 -d",")
+    # we create regional clusters, it will create nodes in all its 3 zones. The node_count we get here is 
+    # the total node count, so we'll need to divide with 3 to get the actual regional node count
     (( node_count=node_count/3 ))
 
     # delete the old cluster
@@ -208,7 +224,7 @@ function reset_benchmark_clusters() {
     local cluster_being_used=0
     for benchmark_dir in ${BENCHMARK_ROOT_PATH}/*/; do
       local benchmark_name=$(basename ${benchmark_dir})
-      [[ "${REPO_NAME}-${benchmark_name}" == ${name} ]] && cluster_being_used && break
+      [[ $(get_cluster_name ${benchmark_name}) == ${name} ]] && cluster_being_used=1 && break
     done
     if (( ! cluster_being_used )); then
       gcloud container clusters delete ${name} --zone ${zone} --quiet
@@ -222,7 +238,7 @@ function reset_benchmark_clusters() {
     local benchmark_name=$(basename ${benchmark_dir})
     local cluster_exists=0
     for name in ${all_cluster_names}; do
-      [[ "${REPO_NAME}-${benchmark_name}" == ${name} ]] && cluster_exists=1 && break
+      [[ $(get_cluster_name ${benchmark_name}) == ${name} ]] && cluster_exists=1 && break
     done
     if (( ! cluster_exists )); then
       create_new_benchmark_cluster ${benchmark_name} || abort "failed to create cluster for the new benchmark ${benchmark_name}"
