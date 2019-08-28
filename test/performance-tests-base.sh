@@ -206,7 +206,8 @@ function reset_benchmark_clusters() {
     [[ ! ${name} =~ ^${REPO_NAME} ]] && continue
     local zone=$(echo "${cluster}" | cut -f2 -d",")
     local cluster_being_used=0
-    for benchmark_name in ${BENCHMARK_ROOT_PATH}/*/; do
+    for benchmark_dir in ${BENCHMARK_ROOT_PATH}/*/; do
+      local benchmark_name=$(basename ${benchmark_dir})
       [[ "${REPO_NAME}-${benchmark_name}" == ${name} ]] && cluster_being_used && break
     done
     if (( ! cluster_being_used )); then
@@ -217,7 +218,8 @@ function reset_benchmark_clusters() {
 
   local all_cluster_names=$(gcloud container clusters list --project="${PROJECT_NAME}" --format="value(name)")
   header "Trying to create new clusters for ${REPO_NAME}"
-  for benchmark_name in ${BENCHMARK_ROOT_PATH}/*/; do
+  for benchmark_dir in ${BENCHMARK_ROOT_PATH}/*/; do
+    local benchmark_name=$(basename ${benchmark_dir})
     local cluster_exists=0
     for name in ${all_cluster_names}; do
       [[ "${REPO_NAME}-${benchmark_name}" == ${name} ]] && cluster_exists=1 && break
