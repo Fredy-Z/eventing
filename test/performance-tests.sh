@@ -14,21 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script runs the performance tests; It is run by prow daily.
-# For convenience, it can also be executed manually.
+source $(dirname $0)/performance-tests-base.sh
 
-# Overwrite the cluster node number to 1
-# TODO(Fredy-Z): since now we only have one single performance test case, and we want to minimize the
-#                impact delay, we perfer to run the test on one single node. When we have more complex
-#                test scenarios, these two lines can be removed.
-export E2E_MIN_CLUSTER_NODES=1
-export E2E_MAX_CLUSTER_NODES=1
+function update_knative() {
+  echo ">> Updating Knative eventing"
+}
 
-source $(dirname $0)/e2e-common.sh
+function update_benchmark() {
+  echo ">> Updating benchmark $1"
+}
 
-initialize $@ --skip-istio-addon
-
-# Run performance tests
-go_test_e2e -tags="performance" -timeout=30m ./test/performance || fail_test
-
-success
+main $@
