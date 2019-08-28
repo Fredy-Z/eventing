@@ -223,7 +223,7 @@ function reset_benchmark_clusters() {
       [[ "${REPO_NAME}-${benchmark_name}" == ${name} ]] && cluster_exists=1 && break
     done
     if (( ! cluster_exists )); then
-      create_new_benchmark_cluster benchmark_name || abort "failed to create cluster for the new benchmark ${benchmark_name}"
+      create_new_benchmark_cluster ${benchmark_name} || abort "failed to create cluster for the new benchmark ${benchmark_name}"
     fi
   done
   header "Done creating new clusters"
