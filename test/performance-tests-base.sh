@@ -215,7 +215,7 @@ function reset_benchmark_clusters() {
   done
   header "Done deleting unused clusters"
 
-  local all_cluster_names=$(gcloud container clusters list —project="${PROJECT_NAME}" —format="value(name)")
+  local all_cluster_names=$(gcloud container clusters list --project="${PROJECT_NAME}" --format="value(name)")
   header "Trying to create new clusters for ${REPO_NAME}"
   for benchmark_name in ${BENCHMARK_ROOT_PATH}/*/; do
     local cluster_exists=0
