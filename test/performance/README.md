@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-1. Install Knative eventing by following the steps in
+1. Install Knative eventing by running the commands in
 https://github.com/knative/eventing/blob/2c6bf0526634804b7ebeee686445901440cc8edd/test/performance/performance-tests.sh#L31
 
 ## Running a benchmark
