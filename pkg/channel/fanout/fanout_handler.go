@@ -24,8 +24,10 @@ package fanout
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/cakturk/go-netstat/netstat"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"go.uber.org/zap"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
@@ -103,9 +105,23 @@ func (f *Handler) ServeHTTP(ctx context.Context, event cloudevents.Event, resp *
 	return f.receiver.ServeHTTP(ctx, event, resp)
 }
 
+var curtTime = time.Now()
 // dispatch takes the event, fans it out to each subscription in f.config. If all the fanned out
 // events return successfully, then return nil. Else, return an error.
 func (f *Handler) dispatch(ctx context.Context, event cloudevents.Event) error {
+	go func() {
+		if time.Now().Sub(curtTime) >= 10 * time.Second {
+			// list all the TCP sockets in state FIN_WAIT_1 for your HTTP server
+			entries, err := netstat.TCPSocks(func(s *netstat.SockTabEntry) bool {
+				return s.State == 0x06
+			})
+			if err == nil {
+				f.logger.Error(fmt.Sprintf("number of time wait sockets: %d", len(entries)))
+			}
+			curtTime = time.Now()
+		}
+	}()
+
 	errorCh := make(chan error, len(f.config.Subscriptions))
 	for _, sub := range f.config.Subscriptions {
 		go func(s eventingduck.SubscriberSpec) {
