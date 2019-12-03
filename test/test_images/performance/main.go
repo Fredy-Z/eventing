@@ -31,7 +31,7 @@ func init() {
 	performance.DeclareFlags()
 
 	// Specific to http load generator
-	flag.Uint64Var(&minWorkers, "min-workers", 10, "Number of vegeta workers")
+	flag.Uint64Var(&minWorkers, "min-workers", 10000, "Number of vegeta workers")
 	flag.StringVar(&sinkURL, "sink", "", "The sink URL for the event destination.")
 }
 

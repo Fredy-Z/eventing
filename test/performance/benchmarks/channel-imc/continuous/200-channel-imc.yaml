@@ -20,6 +20,7 @@ metadata:
   labels:
     role: channel-imc-consumer
 spec:
+  suspend: true
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
   successfulJobsHistoryLimit: 0
@@ -45,7 +46,7 @@ spec:
                 - "--roles=sender,receiver"
                 - "--sink=http://channel-imc-kn-channel.default.svc.cluster.local"
                 - "--aggregator=channel-imc-aggregator:10000"
-                - "--pace=100:10,400:20,800:30,900:60,1000:60,1100:60,1200:60,1500:60"
+                - "--pace=1500:360"
               env:
                 - name: GOGC
                   value: "off"
@@ -75,6 +76,7 @@ metadata:
   labels:
     role: channel-imc-aggregator
 spec:
+  suspend: true
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
   successfulJobsHistoryLimit: 0

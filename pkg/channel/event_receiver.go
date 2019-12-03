@@ -24,8 +24,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cakturk/go-netstat/netstat"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"go.uber.org/zap"
+
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/eventing/pkg/utils"
@@ -109,6 +111,23 @@ func (r *EventReceiver) Start(ctx context.Context) error {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- r.ceClient.StartReceiver(ctx, r.receiverFunc)
+	}()
+
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				// list all the TCP sockets in state FIN_WAIT_1 for your HTTP server
+				entries, err := netstat.TCPSocks(func(s *netstat.SockTabEntry) bool {
+					return s.State == 0x06
+				})
+				if err == nil {
+					r.logger.Info(fmt.Sprintf("number of time wait sockets: %d", len(entries)))
+				}
+			}
+		}
 	}()
 
 	// Stop either if the receiver stops (sending to errCh) or if the context Done channel is closed.

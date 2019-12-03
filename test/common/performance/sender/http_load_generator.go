@@ -30,6 +30,7 @@ import (
 	"github.com/rogpeppe/fastuuid"
 	vegeta "github.com/tsenart/vegeta/lib"
 	"knative.dev/eventing/test/common/performance/common"
+	"knative.dev/eventing/pkg/kncloudevents"
 )
 
 func init() {
@@ -157,7 +158,10 @@ func newCloudEventsClient(sinkUrl string) (client.Client, error) {
 		return nil, fmt.Errorf("failed to create transport: %v", err)
 	}
 
-	return cloudevents.NewClient(t)
+	return kncloudevents.NewDefaultClientGivenHttpTransport(t, kncloudevents.ConnectionArgs{
+		MaxIdleConns:        1000,
+		MaxIdleConnsPerHost: 1000,
+	})
 }
 
 func (h HttpLoadGenerator) Warmup(pace common.PaceSpec, msgSize uint) {
