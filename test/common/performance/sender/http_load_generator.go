@@ -138,7 +138,6 @@ func NewHttpLoadGeneratorFactory(sinkUrl string, minWorkers uint64) LoadGenerato
 				},
 			}}),
 			vegeta.Workers(minWorkers),
-			vegeta.MaxBody(0),
 		)
 
 		var err error
