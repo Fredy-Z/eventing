@@ -28,6 +28,8 @@ import (
 
 	"knative.dev/eventing/test/common/performance/common"
 	pb "knative.dev/eventing/test/common/performance/event_state"
+
+	"github.com/cakturk/go-netstat/netstat"
 )
 
 const (
@@ -119,6 +121,8 @@ func (s *Sender) Run(ctx context.Context) {
 
 	log.Printf("--- BEGIN BENCHMARK ---")
 
+	go printSockets()
+
 	// Start the events processor
 	log.Println("Starting events processor")
 	go s.processEvents()
@@ -203,6 +207,23 @@ func (s *Sender) processEvents() {
 				continue
 			}
 			s.acceptedEvents.Events[e.EventId] = e.At
+		}
+	}
+}
+
+func printSockets() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			// list all the TCP sockets in state FIN_WAIT_1 for your HTTP server
+			entries, err := netstat.TCPSocks(func(s *netstat.SockTabEntry) bool {
+				return s.State == 0x06
+			})
+			if err == nil {
+				log.Printf("number of time wait sockets: %d", len(entries))
+			}
 		}
 	}
 }
