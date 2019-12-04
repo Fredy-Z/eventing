@@ -2,6 +2,7 @@ package kncloudevents
 
 import (
 	nethttp "net/http"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
@@ -17,6 +18,7 @@ type ConnectionArgs struct {
 	MaxIdleConns int
 	// MaxIdleConnsPerHost refers to the max idle connections per host, as in net/http/transport.
 	MaxIdleConnsPerHost int
+	IdleConnTimeout time.Duration
 }
 
 func NewDefaultClient(target ...string) (cloudevents.Client, error) {
@@ -47,6 +49,7 @@ func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connection
 		baseTransport := base.(*nethttp.Transport)
 		baseTransport.MaxIdleConns = connectionArgs[0].MaxIdleConns
 		baseTransport.MaxIdleConnsPerHost = connectionArgs[0].MaxIdleConnsPerHost
+		baseTransport.IdleConnTimeout = connectionArgs[0].IdleConnTimeout
 	}
 	// Add output tracing.
 	t.Client = &nethttp.Client{

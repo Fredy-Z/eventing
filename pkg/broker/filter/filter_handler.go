@@ -80,6 +80,7 @@ func NewHandler(logger *zap.Logger, triggerLister eventinglisters.TriggerNamespa
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
+		IdleConnTimeout:     5 * time.Second,
 	}
 	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(httpTransport, connectionArgs)
 	if err != nil {

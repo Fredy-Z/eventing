@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cehttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
@@ -45,6 +46,7 @@ const (
 	// based on what serving is doing. See https://github.com/knative/serving/blob/master/pkg/network/transports.go.
 	defaultMaxIdleConnections        = 1000
 	defaultMaxIdleConnectionsPerHost = 100
+	defaultIdleConnTimeout           = 5 * time.Second
 )
 
 type Dispatcher interface {
@@ -90,6 +92,7 @@ func NewEventDispatcher(logger *zap.Logger) *EventDispatcher {
 	cArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
+		IdleConnTimeout:     defaultIdleConnTimeout,
 	}
 	ceClient, err := kncloudevents.NewDefaultClientGivenHttpTransport(httpTransport, cArgs)
 	if err != nil {
