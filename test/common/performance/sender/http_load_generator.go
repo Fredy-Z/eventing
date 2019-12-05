@@ -137,8 +137,13 @@ func NewHttpLoadGeneratorFactory(sinkUrl string, minWorkers uint64) LoadGenerato
 						t := ptypes.TimestampNow()
 						if e == nil && response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices {
 							loadGen.acceptedCh <- common.EventTimestamp{EventId: id, At: t}
-						}  else {
-							log.Printf("send event got an error: %v, status code is: %d", e, response.StatusCode)
+						} else {
+							if e != nil {
+								log.Printf("send event got an error: %v", e)
+							}
+							if response != nil {
+								log.Printf("status code is: %d", response.StatusCode)
+							}
 						}
 					},
 				},
