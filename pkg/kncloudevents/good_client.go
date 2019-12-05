@@ -1,12 +1,17 @@
 package kncloudevents
 
 import (
+	"context"
+	"errors"
+	"net"
 	nethttp "net/http"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/tracing"
 )
 
@@ -17,6 +22,47 @@ type ConnectionArgs struct {
 	MaxIdleConns int
 	// MaxIdleConnsPerHost refers to the max idle connections per host, as in net/http/transport.
 	MaxIdleConnsPerHost int
+	IdleConnTimeout time.Duration
+}
+
+var backOffTemplate = wait.Backoff{
+	Duration: 50 * time.Millisecond,
+	Factor:   1.4,
+	Jitter:   0.1, // At most 10% jitter.
+	Steps:    15,
+}
+
+const sleepTO = 30 * time.Millisecond
+
+var errDialTimeout = errors.New("timed out dialing")
+
+// dialWithBackOff executes `net.Dialer.DialContext()` with exponentially increasing
+// dial timeouts. In addition it sleeps with random jitter between tries.
+func dialWithBackOff(ctx context.Context, network, address string) (net.Conn, error) {
+	return dialBackOffHelper(ctx, network, address, backOffTemplate, sleepTO)
+}
+
+func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Backoff, sleep time.Duration) (net.Conn, error) {
+	dialer := &net.Dialer{
+		Timeout:   bo.Duration, // Initial duration.
+		KeepAlive: 5 * time.Second,
+	}
+	for {
+		c, err := dialer.DialContext(ctx, network, address)
+		if err != nil {
+			if err, ok := err.(net.Error); ok && err.Timeout() {
+				if bo.Steps < 1 {
+					break
+				}
+				dialer.Timeout = bo.Step()
+				time.Sleep(wait.Jitter(sleep, 1.0)) // Sleep with jitter.
+				continue
+			}
+			return nil, err
+		}
+		return c, nil
+	}
+	return nil, errDialTimeout
 }
 
 func NewDefaultClient(target ...string) (cloudevents.Client, error) {
@@ -47,6 +93,9 @@ func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connection
 		baseTransport := base.(*nethttp.Transport)
 		baseTransport.MaxIdleConns = connectionArgs[0].MaxIdleConns
 		baseTransport.MaxIdleConnsPerHost = connectionArgs[0].MaxIdleConnsPerHost
+		baseTransport.IdleConnTimeout = connectionArgs[0].IdleConnTimeout
+		// This is bespoke.
+		baseTransport.DialContext = dialWithBackOff
 	}
 	// Add output tracing.
 	t.Client = &nethttp.Client{
