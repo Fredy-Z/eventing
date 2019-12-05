@@ -117,7 +117,7 @@ func (h *Handler) decrementTTL(event *cloudevents.Event) bool {
 func (h *Handler) getTTLToSet(event *cloudevents.Event) int32 {
 	ttl, err := broker.GetTTL(event.Context)
 	if err != nil {
-		h.Logger.Info("Error retrieving TTL, defaulting.", zap.Error(err))
+		h.Logger.Debug("Error retrieving TTL, defaulting.", zap.Error(err))
 		return defaultTTL
 	}
 	return ttl - 1
