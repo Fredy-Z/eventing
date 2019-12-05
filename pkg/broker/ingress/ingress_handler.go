@@ -109,7 +109,7 @@ func (h *Handler) decrementTTL(event *cloudevents.Event) bool {
 	}
 
 	if err := broker.SetTTL(event.Context, ttl); err != nil {
-		h.Logger.Error("failed to set TTL", zap.Error(err))
+		h.Logger.Error("Failed to set TTL", zap.Error(err))
 	}
 	return true
 }
