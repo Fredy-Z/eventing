@@ -53,7 +53,7 @@ const (
 	// Set them on a 10:1 ratio, but this would actually depend on the Triggers' subscribers and the workload itself.
 	// These are magic numbers, partly set based on empirical evidence running performance workloads, and partly
 	// based on what serving is doing. See https://github.com/knative/serving/blob/master/pkg/network/transports.go.
-	defaultMaxIdleConnections        = 1000
+	defaultMaxIdleConnections        = 10000
 	defaultMaxIdleConnectionsPerHost = 1000
 )
 
