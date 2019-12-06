@@ -95,7 +95,7 @@ func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connection
 		baseTransport.MaxIdleConnsPerHost = connectionArgs[0].MaxIdleConnsPerHost
 
 		// This is bespoke.
-		baseTransport.DialContext = dialWithBackOff
+		// baseTransport.DialContext = dialWithBackOff
 	}
 	// Add output tracing.
 	t.Client = &nethttp.Client{
