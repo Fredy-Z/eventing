@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"runtime"
 	"time"
 
@@ -162,7 +163,7 @@ func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
 }
 
 // processReceiveEvent processes the event received by the CloudEvents receiver.
-func (r *Receiver) processReceiveEvent(event cloudevents.Event) {
+func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevents.EventResponse) {
 	t := r.typeExtractor(event)
 	switch t {
 	case common.MeasureEventType:
@@ -176,6 +177,7 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event) {
 			r.endCh <- true
 		})
 	}
+	resp.Status = http.StatusAccepted
 }
 
 // waitForPortAvailable waits until the given TCP port is available.
