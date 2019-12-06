@@ -91,6 +91,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:a5d8f7a09df53800d7b8a6c0425a5d7d1c31345aca1955993909b7e037bf2cdb"
+  name = "github.com/cakturk/go-netstat"
+  packages = ["netstat"]
+  pruneopts = "NUT"
+  revision = "a633b9c55b1a348f7b8a7f473e1aa08d7701259e"
+
+[[projects]]
   digest = "1:e7d26760c4e7d67a443b082153c4b473ad0b8f7388302a2f788b1360f751abb8"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
@@ -1379,6 +1387,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/cakturk/go-netstat/netstat",
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
