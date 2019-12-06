@@ -25,9 +25,10 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
+
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/test/common/performance/common"
 	pb "knative.dev/eventing/test/common/performance/event_state"
 )
@@ -151,7 +152,7 @@ func (r *Receiver) processEvents() {
 }
 
 func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
-	cli, err := newCloudEventsClient()
+	cli, err := kncloudevents.NewDefaultClient()
 	if err != nil {
 		return fmt.Errorf("failed to create CloudEvents client: %v", err)
 	}
@@ -175,17 +176,6 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event) {
 			r.endCh <- true
 		})
 	}
-}
-
-func newCloudEventsClient() (client.Client, error) {
-	t, err := cloudevents.NewHTTPTransport(
-		cloudevents.WithBinaryEncoding(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create transport: %v", err)
-	}
-
-	return cloudevents.NewClient(t)
 }
 
 // waitForPortAvailable waits until the given TCP port is available.
