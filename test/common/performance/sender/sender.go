@@ -28,8 +28,6 @@ import (
 
 	"knative.dev/eventing/test/common/performance/common"
 	pb "knative.dev/eventing/test/common/performance/event_state"
-
-	// "github.com/cakturk/go-netstat/netstat"
 )
 
 const (
@@ -42,6 +40,10 @@ type Sender struct {
 	paceSpecs     []common.PaceSpec
 	msgSize       uint
 	warmupSeconds uint
+
+	// EventTimestamp channels
+	sentCh     chan common.EventTimestamp
+	acceptedCh chan common.EventTimestamp
 
 	// events recording maps
 	sentEvents     *pb.EventsRecord
@@ -67,7 +69,7 @@ func NewSender(loadGeneratorFactory LoadGeneratorFactory, aggregAddr string, msg
 	}
 
 	// We need those estimates to allocate memory before benchmark starts
-	estimatedNumberOfTotalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pacerSpecs)
+	estimatedNumberOfMessagesInsideAChannel, estimatedNumberOfTotalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pacerSpecs)
 
 	// Small note: receivedCh depends on receive thpt and not send thpt but we
 	// don't care since this is a pessimistic estimate and receive thpt < send thpt
@@ -79,6 +81,9 @@ func NewSender(loadGeneratorFactory LoadGeneratorFactory, aggregAddr string, msg
 		msgSize:       msgSize,
 		warmupSeconds: warmupSeconds,
 		paceSpecs:     pacerSpecs,
+
+		sentCh:     make(chan common.EventTimestamp, estimatedNumberOfMessagesInsideAChannel),
+		acceptedCh: make(chan common.EventTimestamp, estimatedNumberOfMessagesInsideAChannel),
 
 		sentEvents: &pb.EventsRecord{
 			Type:   pb.EventsRecord_SENT,
@@ -92,7 +97,7 @@ func NewSender(loadGeneratorFactory LoadGeneratorFactory, aggregAddr string, msg
 		aggregatorClient: aggregatorClient,
 	}
 
-	executor.loadGenerator, err = loadGeneratorFactory(eventsSource(), executor.sentEvents.Events, executor.acceptedEvents.Events)
+	executor.loadGenerator, err = loadGeneratorFactory(eventsSource(), executor.sentCh, executor.acceptedCh)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +120,10 @@ func (s *Sender) Run(ctx context.Context) {
 	log.Printf("--- BEGIN BENCHMARK ---")
 
 	// go printSockets()
+
+	// Start the events processor
+	log.Println("Starting events processor")
+	go s.processEvents()
 
 	// Clean mess before starting
 	runtime.GC()
@@ -143,6 +152,8 @@ func (s *Sender) Run(ctx context.Context) {
 
 	log.Printf("Benchmark completed in %v", time.Since(benchmarkBeginning))
 
+	s.closeChannels()
+
 	log.Println("---- END BENCHMARK ----")
 
 	log.Println("Sending collected data to the aggregator")
@@ -168,6 +179,34 @@ func (s *Sender) warmup(ctx context.Context, warmupSeconds uint) error {
 	time.Sleep(common.WaitAfterWarmup)
 
 	return nil
+}
+
+func (s *Sender) closeChannels() {
+	log.Printf("All requests sent")
+
+	close(s.sentCh)
+	close(s.acceptedCh)
+
+	log.Printf("All channels closed")
+}
+
+// processEvents keeps a record of all events (sent, accepted, failed, received).
+func (s *Sender) processEvents() {
+	for {
+		select {
+		case e, ok := <-s.sentCh:
+			if !ok {
+				continue
+			}
+			s.sentEvents.Events[e.EventId] = e.At
+
+		case e, ok := <-s.acceptedCh:
+			if !ok {
+				continue
+			}
+			s.acceptedEvents.Events[e.EventId] = e.At
+		}
+	}
 }
 
 // func printSockets() {

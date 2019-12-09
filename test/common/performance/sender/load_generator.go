@@ -17,8 +17,6 @@ limitations under the License.
 package sender
 
 import (
-	"github.com/golang/protobuf/ptypes/timestamp"
-
 	"knative.dev/eventing/test/common/performance/common"
 )
 
@@ -32,5 +30,5 @@ type LoadGenerator interface {
 	SendEndEvent()
 }
 
-type LoadGeneratorFactory func(eventSource string, sentEvents map[string]*timestamp.Timestamp,
-	receivedEvents map[string]*timestamp.Timestamp) (LoadGenerator, error)
+type LoadGeneratorFactory func(eventSource string, sentCh chan common.EventTimestamp,
+	acceptedCh chan common.EventTimestamp) (LoadGenerator, error)

@@ -44,6 +44,7 @@ type Receiver struct {
 	idExtractor   IdExtractor
 	timeout       time.Duration
 
+	receivedCh     chan common.EventTimestamp
 	endCh          chan struct{}
 	receivedEvents *pb.EventsRecord
 
@@ -63,7 +64,8 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 		return nil, err
 	}
 
-	totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
+	channelSize, totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
+	channelSize = 10000
 
 	// Calculate timeout for receiver
 	var timeout time.Duration
@@ -83,6 +85,7 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 		typeExtractor: typeExtractor,
 		idExtractor:   idExtractor,
 		timeout:       timeout,
+		receivedCh:    make(chan common.EventTimestamp, channelSize),
 		endCh:         make(chan struct{}, 1),
 		receivedEvents: &pb.EventsRecord{
 			Type:   pb.EventsRecord_RECEIVED,
@@ -112,8 +115,7 @@ func (r *Receiver) Run(ctx context.Context) {
 		r.endCh <- struct{}{}
 	})
 
-	// Block until an event is received to stop the receiver.
-	<-r.endCh
+	r.processEvents()
 
 	// Stop the timeoutTimer in case the tear down was triggered by end message
 	timeoutTimer.Stop()
@@ -128,6 +130,23 @@ func (r *Receiver) Run(ctx context.Context) {
 		r.receivedEvents,
 	}}); err != nil {
 		log.Fatalf("Failed to send events record: %v\n", err)
+	}
+
+	close(r.receivedCh)
+}
+
+func (r *Receiver) processEvents() {
+	for {
+		select {
+		case e, ok := <-r.receivedCh:
+			if !ok {
+				return
+			}
+			r.receivedEvents.Events[e.EventId] = e.At
+		case _, _ = <-r.endCh:
+			return
+		default:
+		}
 	}
 }
 
@@ -147,9 +166,7 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 	t := r.typeExtractor(event)
 	switch t {
 	case common.MeasureEventType:
-		eventID := r.idExtractor(event)
-		ts := ptypes.TimestampNow()
-		r.receivedEvents.Events[eventID] = ts
+		r.receivedCh <- common.EventTimestamp{EventId: r.idExtractor(event), At: ptypes.TimestampNow()}
 	case common.GCEventType:
 		runtime.GC()
 	case common.EndEventType:

@@ -27,7 +27,6 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
 	"github.com/rogpeppe/fastuuid"
 	vegeta "github.com/tsenart/vegeta/lib"
@@ -100,8 +99,8 @@ type HttpLoadGenerator struct {
 	eventSource string
 	sinkUrl     string
 
-	sentEvents     map[string]*timestamp.Timestamp
-	accepedEvents  map[string]*timestamp.Timestamp
+	sentCh     chan common.EventTimestamp
+	acceptedCh chan common.EventTimestamp
 
 	warmupAttacker *vegeta.Attacker
 	paceAttacker   *vegeta.Attacker
@@ -109,7 +108,7 @@ type HttpLoadGenerator struct {
 }
 
 func NewHttpLoadGeneratorFactory(sinkUrl string, minWorkers uint64) LoadGeneratorFactory {
-	return func(eventSource string, sentEvents map[string]*timestamp.Timestamp, accepedEvents map[string]*timestamp.Timestamp) (generator LoadGenerator, e error) {
+	return func(eventSource string, sentCh chan common.EventTimestamp, acceptedCh chan common.EventTimestamp) (generator LoadGenerator, e error) {
 		if sinkUrl == "" {
 			panic("Missing --sink flag")
 		}
@@ -118,8 +117,8 @@ func NewHttpLoadGeneratorFactory(sinkUrl string, minWorkers uint64) LoadGenerato
 			eventSource: eventSource,
 			sinkUrl:     sinkUrl,
 
-			sentEvents:     sentEvents,
-			accepedEvents:  accepedEvents,
+			sentCh:     sentCh,
+			acceptedCh: acceptedCh,
 		}
 
 		loadGen.warmupAttacker = vegeta.NewAttacker(vegeta.Workers(minWorkers))
@@ -129,13 +128,14 @@ func NewHttpLoadGeneratorFactory(sinkUrl string, minWorkers uint64) LoadGenerato
 				Transport: requestInterceptor{
 					before: func(request *http.Request) {
 						id := request.Header.Get("Ce-Id")
-						sentEvents[id] = ptypes.TimestampNow()
+						loadGen.sentCh <- common.EventTimestamp{EventId: id, At: ptypes.TimestampNow()}
 					},
 					transport: vegetaAttackerTransport(),
 					after: func(request *http.Request, response *http.Response, e error) {
 						id := request.Header.Get("Ce-Id")
+						t := ptypes.TimestampNow()
 						if e == nil && response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices {
-							accepedEvents[id] = ptypes.TimestampNow()
+							loadGen.acceptedCh <- common.EventTimestamp{EventId: id, At: t}
 						}
 					},
 				},
