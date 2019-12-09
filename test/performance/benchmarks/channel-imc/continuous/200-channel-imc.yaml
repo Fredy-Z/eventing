@@ -57,7 +57,7 @@ spec:
                       fieldPath: metadata.namespace
               resources:
                 requests:
-                  cpu: 2000m
+                  cpu: 1000m
                   memory: 6Gi
               ports:
                 - name: cloudevents
@@ -111,7 +111,7 @@ spec:
                       fieldPath: metadata.namespace
               resources:
                 requests:
-                  cpu: 2000m
+                  cpu: 1000m
                   memory: 6Gi
               ports:
                 - name: cloudevents
