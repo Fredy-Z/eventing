@@ -17,8 +17,6 @@ kind: CronJob
 metadata:
   name: channel-imc-send
   namespace: default
-  labels:
-    role: channel-imc-consumer
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
