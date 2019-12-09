@@ -143,9 +143,7 @@ func (r *Receiver) processEvents() {
 			if !ok {
 				return
 			}
-			start := time.Now()
 			r.receivedEvents.Events[e.EventId] = e.At
-			log.Printf("time taken: %f millisec", time.Now().Sub(start).Seconds() * 1000)
 		case _, _ = <-r.endCh:
 			return
 		default:
@@ -165,6 +163,7 @@ func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
 
 // processReceiveEvent processes the event received by the CloudEvents receiver.
 func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevents.EventResponse) {
+	start := time.Now()
 	t := r.typeExtractor(event)
 	switch t {
 	case common.MeasureEventType:
@@ -179,6 +178,7 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 		})
 	}
 	resp.Status = http.StatusAccepted
+	log.Printf("time taken: %f millisec", time.Now().Sub(start).Seconds() * 1000)
 }
 
 // waitForPortAvailable waits until the given TCP port is available.
