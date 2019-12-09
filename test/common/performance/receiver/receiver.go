@@ -65,7 +65,7 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 	}
 
 	channelSize, totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
-	channelSize = 1000
+	channelSize = 10000
 
 	// Calculate timeout for receiver
 	var timeout time.Duration
