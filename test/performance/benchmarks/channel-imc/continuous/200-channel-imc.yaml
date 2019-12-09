@@ -38,27 +38,27 @@ spec:
           restartPolicy: Never
           containers:
             - name: sender
-                image: knative.dev/eventing/test/test_images/performance
-                args:
-                  - "--roles=sender"
-                  - "--aggregator=channel-imc-aggregator:10000"
-                  - "--sink=http://channel-imc-kn-channel.default.svc.cluster.local"
-                  - "--pace=100:10,400:20,800:30,900:60,1000:60,1100:60,1200:60,1500:60"
-                env:
-                  - name: GOGC
-                    value: "off"
-                  - name: POD_NAME
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.name
-                  - name: POD_NAMESPACE
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.namespace
-                resources:
-                  requests:
-                    cpu: 1000m
-                    memory: 3Gi
+              image: knative.dev/eventing/test/test_images/performance
+              args:
+                - "--roles=sender"
+                - "--aggregator=channel-imc-aggregator:10000"
+                - "--sink=http://channel-imc-kn-channel.default.svc.cluster.local"
+                - "--pace=100:10,400:20,800:30,900:60,1000:60,1100:60,1200:60,1500:60"
+              env:
+                - name: GOGC
+                  value: "off"
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 3Gi
             - name: receiver
               image: knative.dev/eventing/test/test_images/performance
               args:
