@@ -145,7 +145,7 @@ func (r *Receiver) processEvents() {
 			}
 			start := time.Now()
 			r.receivedEvents.Events[e.EventId] = e.At
-			log.Printf("time taken: %d millisec", time.Now().Sub(start).Milliseconds())
+			log.Printf("time taken: %f millisec", time.Now().Sub(start).Seconds() * 1000)
 		case _, _ = <-r.endCh:
 			return
 		default:
