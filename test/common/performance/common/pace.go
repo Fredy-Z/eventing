@@ -31,20 +31,12 @@ type PaceSpec struct {
 }
 
 // We need those estimates to allocate memory before benchmark starts
-func CalculateMemoryConstraintsForPaceSpecs(paceSpecs []PaceSpec) (estimatedNumberOfMessagesInsideAChannel uint64, estimatedNumberOfTotalMessages uint64) {
+func CalculateMemoryConstraintsForPaceSpecs(paceSpecs []PaceSpec) (estimatedNumberOfTotalMessages uint64) {
 	for _, pacer := range paceSpecs {
 		totalMessages := uint64(pacer.Rps * int(pacer.Duration.Seconds()))
 		// Add a bit more, just to be sure that we don't under allocate
 		totalMessages = totalMessages + uint64(float64(totalMessages)*0.1)
-		// Queueing theory: given our channels can process 50 rps, queueLength = arrival rps / 50 rps = pacer.rps / 50
-		queueLength := uint64(pacer.Rps / 50)
-		if queueLength < 10 {
-			queueLength = 10
-		}
 		estimatedNumberOfTotalMessages += totalMessages
-		if queueLength > estimatedNumberOfMessagesInsideAChannel {
-			estimatedNumberOfMessagesInsideAChannel = queueLength
-		}
 	}
 	return
 }

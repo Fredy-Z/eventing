@@ -44,8 +44,7 @@ type Receiver struct {
 	idExtractor   IdExtractor
 	timeout       time.Duration
 
-	receivedCh     chan common.EventTimestamp
-	endCh          chan bool
+	endCh          chan struct{}
 	receivedEvents *pb.EventsRecord
 
 	// aggregator GRPC client
@@ -64,8 +63,7 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 		return nil, err
 	}
 
-	channelSize, totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
-	channelSize = 10000
+	totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
 
 	// Calculate timeout for receiver
 	var timeout time.Duration
@@ -85,8 +83,7 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 		typeExtractor: typeExtractor,
 		idExtractor:   idExtractor,
 		timeout:       timeout,
-		receivedCh:    make(chan common.EventTimestamp, channelSize),
-		endCh:         make(chan bool, 1),
+		endCh:         make(chan struct{}, 1),
 		receivedEvents: &pb.EventsRecord{
 			Type:   pb.EventsRecord_RECEIVED,
 			Events: make(map[string]*timestamp.Timestamp, totalMessages),
@@ -109,14 +106,14 @@ func (r *Receiver) Run(ctx context.Context) {
 
 	// When the testing service is degradated, there is a chance that the end message is not received
 	// This timer sends to endCh a signal to stop processing events and start tear down of receiver
+	log.Printf("Started receiver timeout timer of duration %v", r.timeout)
 	timeoutTimer := time.AfterFunc(r.timeout, func() {
 		log.Printf("Receiver timeout")
-		r.endCh <- true
+		r.endCh <- struct{}{}
 	})
 
-	log.Printf("Started receiver timeout timer of duration %v", r.timeout)
-
-	r.processEvents()
+	// Block until an event is received to stop the receiver.
+	<-r.endCh
 
 	// Stop the timeoutTimer in case the tear down was triggered by end message
 	timeoutTimer.Stop()
@@ -131,23 +128,6 @@ func (r *Receiver) Run(ctx context.Context) {
 		r.receivedEvents,
 	}}); err != nil {
 		log.Fatalf("Failed to send events record: %v\n", err)
-	}
-
-	close(r.receivedCh)
-}
-
-func (r *Receiver) processEvents() {
-	for {
-		select {
-		case e, ok := <-r.receivedCh:
-			if !ok {
-				return
-			}
-			r.receivedEvents.Events[e.EventId] = e.At
-		case _, _ = <-r.endCh:
-			return
-		default:
-		}
 	}
 }
 
@@ -167,14 +147,16 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 	t := r.typeExtractor(event)
 	switch t {
 	case common.MeasureEventType:
-		r.receivedCh <- common.EventTimestamp{EventId: r.idExtractor(event), At: ptypes.TimestampNow()}
+		eventID := r.idExtractor(event)
+		ts := ptypes.TimestampNow()
+		r.receivedEvents.Events[eventID] = ts
 	case common.GCEventType:
 		runtime.GC()
 	case common.EndEventType:
 		log.Printf("End message received correctly")
 		// Wait a bit so all messages on wire are processed
 		time.AfterFunc(shutdownWaitTime, func() {
-			r.endCh <- true
+			r.endCh <- struct{}{}
 		})
 	}
 	resp.Status = http.StatusAccepted
