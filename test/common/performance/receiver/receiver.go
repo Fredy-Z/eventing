@@ -177,7 +177,10 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 		})
 	}
 	resp.Status = http.StatusAccepted
-	log.Printf("time taken: %f millisec", time.Now().Sub(start).Seconds() * 1000)
+	millisec := time.Now().Sub(start).Seconds() * 1000
+	if millisec >= 1 {
+		log.Printf("time taken: %f millisec", millisec)
+	}
 }
 
 // waitForPortAvailable waits until the given TCP port is available.
