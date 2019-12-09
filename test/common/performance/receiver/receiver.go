@@ -65,7 +65,7 @@ func NewReceiver(paceFlag string, aggregAddr string, warmupSeconds uint, typeExt
 	}
 
 	channelSize, totalMessages := common.CalculateMemoryConstraintsForPaceSpecs(pace)
-	channelSize = 10000
+	channelSize = 1000
 
 	// Calculate timeout for receiver
 	var timeout time.Duration
@@ -127,11 +127,9 @@ func (r *Receiver) Run(ctx context.Context) {
 
 	log.Printf("%-15s: %d", "Received count", len(r.receivedEvents.Events))
 
-	err := r.aggregatorClient.Publish(&pb.EventsRecordList{Items: []*pb.EventsRecord{
+	if err := r.aggregatorClient.Publish(&pb.EventsRecordList{Items: []*pb.EventsRecord{
 		r.receivedEvents,
-	}})
-
-	if err != nil {
+	}}); err != nil {
 		log.Fatalf("Failed to send events record: %v\n", err)
 	}
 
