@@ -15,7 +15,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: channel-imc-send-receive
+  name: channel-imc-send
   namespace: default
   labels:
     role: channel-imc-consumer
@@ -39,13 +39,67 @@ spec:
           serviceAccountName: perf-eventing
           restartPolicy: Never
           containers:
-            - name: sender-receiver
+            - name: sender
               image: knative.dev/eventing/test/test_images/performance
               args:
-                - "--roles=sender,receiver"
-                - "--sink=http://channel-imc-kn-channel.default.svc.cluster.local"
+                - "--roles=sender"
                 - "--aggregator=channel-imc-aggregator:10000"
-                - "--pace=1500:360"
+                - "--sink=http://channel-imc-kn-channel.default.svc.cluster.local"
+                - "--pace=100:10,400:20,800:30,900:60,1000:60,1100:60,1200:60,1500:60"
+              env:
+                - name: GOGC
+                  value: "off"
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              resources:
+                requests:
+                  cpu: 2000m
+                  memory: 6Gi
+              ports:
+                - name: cloudevents
+                  containerPort: 8080
+
+---
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: channel-imc-receive
+  namespace: default
+  labels:
+    role: channel-imc-consumer
+spec:
+  schedule: "0/15 * * * *"
+  # History must be zero to ensure no failed pods stick around and block the next job
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 0
+  jobTemplate:
+    spec:
+      completions: 1
+      parallelism: 1
+      backoffLimit: 0
+      # Allow up to 14 minutes, then clean up to make room for the next attempt
+      activeDeadlineSeconds: 840
+      template:
+        metadata:
+          labels:
+            role: channel-imc-consumer
+        spec:
+          serviceAccountName: perf-eventing
+          restartPolicy: Never
+          containers:
+            - name: receiver
+              image: knative.dev/eventing/test/test_images/performance
+              args:
+                - "--roles=receiver"
+                - "--aggregator=channel-imc-aggregator:10000"
+                - "--pace=100:10,400:20,800:30,900:60,1000:60,1100:60,1200:60,1500:60"
               env:
                 - name: GOGC
                   value: "off"
