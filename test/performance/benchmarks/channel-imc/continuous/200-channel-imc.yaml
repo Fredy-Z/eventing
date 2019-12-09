@@ -15,7 +15,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: channel-imc-send
+  name: channel-imc-sender
   namespace: default
 spec:
   schedule: "0/15 * * * *"
@@ -30,9 +30,6 @@ spec:
       # Allow up to 14 minutes, then clean up to make room for the next attempt
       activeDeadlineSeconds: 840
       template:
-        metadata:
-          labels:
-            role: channel-imc-consumer
         spec:
           serviceAccountName: perf-eventing
           restartPolicy: Never
@@ -68,7 +65,7 @@ spec:
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: channel-imc-receive
+  name: channel-imc-receiver
   namespace: default
   labels:
     role: channel-imc-consumer
