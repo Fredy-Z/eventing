@@ -65,8 +65,6 @@ kind: CronJob
 metadata:
   name: broker-imc-receiver
   namespace: default
-  labels:
-    role: broker-imc-receiver
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
@@ -117,8 +115,6 @@ kind: CronJob
 metadata:
   name: broker-imc-aggregator
   namespace: default
-  labels:
-    role: broker-imc-aggregator
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
