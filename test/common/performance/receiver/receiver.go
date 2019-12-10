@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -142,6 +143,7 @@ func (r *Receiver) processEvents() {
 			if !ok {
 				return
 			}
+			atomic.AddUint64(&counter, -1)
 			r.receivedEvents.Events[e.EventId] = e.At
 		case _, _ = <-r.endCh:
 			return
@@ -160,6 +162,8 @@ func (r *Receiver) startCloudEventsReceiver(ctx context.Context) error {
 	return cli.StartReceiver(ctx, r.processReceiveEvent)
 }
 
+var counter uint64
+
 // processReceiveEvent processes the event received by the CloudEvents receiver.
 func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevents.EventResponse) {
 	start := time.Now()
@@ -167,6 +171,7 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 	switch t {
 	case common.MeasureEventType:
 		r.receivedCh <- common.EventTimestamp{EventId: r.idExtractor(event), At: ptypes.TimestampNow()}
+		atomic.AddUint64(&counter, 1)
 	case common.GCEventType:
 		runtime.GC()
 	case common.EndEventType:
@@ -180,6 +185,9 @@ func (r *Receiver) processReceiveEvent(event cloudevents.Event, resp *cloudevent
 	millisec := time.Now().Sub(start).Seconds() * 1000
 	if millisec >= 1 {
 		log.Printf("time taken: %f millisec", millisec)
+	}
+	if counter >= 100 {
+		log.Printf("number of queued events: %d", counter)
 	}
 }
 
