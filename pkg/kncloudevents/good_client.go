@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracing"
 )
 
@@ -88,7 +89,7 @@ func dialBackOffHelper(ctx context.Context, network, address string, bo wait.Bac
 // and different connection options, in case they are specified.
 func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connectionArgs ...ConnectionArgs) (cloudevents.Client, error) {
 	// Add connection options to the default transport.
-	var base = nethttp.DefaultTransport
+	var base = network.NewAutoTransport()
 	if len(connectionArgs) > 0 {
 		baseTransport := base.(*nethttp.Transport)
 		baseTransport.MaxIdleConns = connectionArgs[0].MaxIdleConns
