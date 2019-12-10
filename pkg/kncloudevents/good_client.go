@@ -93,6 +93,9 @@ func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connection
 		baseTransport := base.(*nethttp.Transport)
 		baseTransport.MaxIdleConns = connectionArgs[0].MaxIdleConns
 		baseTransport.MaxIdleConnsPerHost = connectionArgs[0].MaxIdleConnsPerHost
+		// baseTransport.IdleConnTimeout = 5 * time.Second
+		// baseTransport.TLSHandshakeTimeout = 10 * time.Second
+		// baseTransport.ExpectContinueTimeout = 1 * time.Second
 
 		// This is bespoke.
 		baseTransport.DialContext = dialWithBackOff

@@ -55,7 +55,7 @@ spec:
                       fieldPath: metadata.namespace
               resources:
                 requests:
-                  cpu: 2000m
+                  cpu: 1200m
                   memory: 3Gi
             - name: receiver
               image: knative.dev/eventing/test/test_images/performance
@@ -74,7 +74,7 @@ spec:
                       fieldPath: metadata.namespace
               resources:
                 requests:
-                  cpu: 2000m
+                  cpu: 1200m
                   memory: 3Gi
               ports:
                 - name: cloudevents
