@@ -143,7 +143,7 @@ func (r *Receiver) processEvents() {
 			if !ok {
 				return
 			}
-			atomic.AddUint64(&counter, -1)
+			atomic.AddUint64(&counter, ^uint64(0))
 			r.receivedEvents.Events[e.EventId] = e.At
 		case _, _ = <-r.endCh:
 			return
