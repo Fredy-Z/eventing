@@ -123,7 +123,7 @@ spec:
                   containerPort: 10000
               resources:
                 requests:
-                  cpu: 1000m
+                  cpu: 2500m
                   memory: 2Gi
               volumeMounts:
                 - name: config-mako

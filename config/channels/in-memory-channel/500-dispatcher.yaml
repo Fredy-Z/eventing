@@ -50,6 +50,10 @@ spec:
         volumeMounts:
           - name: config-logging
             mountPath: /etc/config-logging
+        resources:
+          requests:
+            cpu: 3000m
+            memory: 2Gi
       volumes:
         - name: config-logging
           configMap:
