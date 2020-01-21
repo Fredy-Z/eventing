@@ -63,10 +63,7 @@ EOF
   # Create secrets required for running benchmarks on the cluster
   echo ">> Creating secrets on cluster $1 in zone $2"
   kubectl create secret generic mako-secrets \
-    --from-file=robot.json=${GOOGLE_APPLICATION_CREDENTIALS} \
-    --from-file=github-token=${GITHUB_TOKEN} \
-    --from-file=slack-read-token=${SLACK_READ_TOKEN} \
-    --from-file=slack-write-token=${SLACK_WRITE_TOKEN}
+    --from-file=robot.json=${GOOGLE_APPLICATION_CREDENTIALS}
   # Delete all benchmark jobs to avoid noise in the update process
   echo ">> Deleting all cronjobs and jobs on cluster $1 in zone $2"
   kubectl delete cronjob --all
