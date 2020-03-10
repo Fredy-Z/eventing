@@ -508,8 +508,11 @@ function main() {
     setup_upstream
     setup_branch
     git checkout upstream/"${RELEASE_BRANCH}" || abort "cannot checkout branch ${RELEASE_BRANCH}"
+    echo "#############checkout to branch: ${RELEASE_BRANCH}"
     ./hack/release.sh "$@"
   fi
+
+  echo "###########current branch is: $(git rev-parse --abbrev-ref HEAD)"
 
   # Log what will be done and where.
   banner "Release configuration"
