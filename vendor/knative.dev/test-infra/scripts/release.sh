@@ -183,7 +183,7 @@ function prepare_auto_release() {
 
   if [[ -z "${release_number}" ]]; then
     echo "*** No new release will be generated, as no new branches exist"
-    exit  0
+#    exit  0
   fi
 
   RELEASE_VERSION="${release_number}.0"
@@ -236,7 +236,7 @@ function prepare_dot_release() {
   if [[ "${last_release_commit}" == "${release_branch_commit}" ]]; then
     echo "*** Branch ${RELEASE_BRANCH} has no new cherry-picks since release ${last_version}"
     echo "*** No dot release will be generated, as no changes exist"
-    exit 0
+#    exit 0
   fi
   # Create new release version number
   local last_build="$(release_build_number ${last_version})"
@@ -501,6 +501,16 @@ function main() {
   function_exists build_release || abort "function 'build_release()' not defined"
   [[ -x ${VALIDATION_TESTS} ]] || abort "test script '${VALIDATION_TESTS}' doesn't exist"
   parse_flags "$@"
+
+  # Checkout specific branch, if necessary
+  local current_branch="$(git branch --show-current)"
+  if [[ -n "${RELEASE_BRANCH}" && -z "${FROM_NIGHTLY_RELEASE}" && "${current_branch}" != "${RELEASE_BRANCH}" ]]; then
+    setup_upstream
+    setup_branch
+    git checkout upstream/"${RELEASE_BRANCH}" || abort "cannot checkout branch ${RELEASE_BRANCH}"
+    ./hack/release.sh "$@"
+  fi
+
   # Log what will be done and where.
   banner "Release configuration"
   if which gcloud &>/dev/null ; then
@@ -533,13 +543,6 @@ function main() {
   fi
   [[ -n "${RELEASE_NOTES}" ]] && echo "- Release notes are generated from '${RELEASE_NOTES}'"
 
-  # Checkout specific branch, if necessary
-  if [[ -n "${RELEASE_BRANCH}" && -z "${FROM_NIGHTLY_RELEASE}" ]]; then
-    setup_upstream
-    setup_branch
-    git checkout upstream/${RELEASE_BRANCH} || abort "cannot checkout branch ${RELEASE_BRANCH}"
-  fi
-
   if [[ -n "${FROM_NIGHTLY_RELEASE}" ]]; then
     build_from_nightly_release
   else
@@ -553,7 +556,7 @@ function main() {
     [[ -s ${artifact} ]] || abort "Artifact ${artifact} is empty"
   done
   echo "New release built successfully"
-  publish_artifacts
+#  publish_artifacts
 }
 
 # Publishes a new release on GitHub, also git tagging it (unless this is not a versioned release).
