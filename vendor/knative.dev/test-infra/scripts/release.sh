@@ -503,7 +503,7 @@ function main() {
   parse_flags "$@"
 
   # Checkout specific branch, if necessary
-  local current_branch="$(git branch --show-current)"
+  local current_branch="$(git rev-parse --abbrev-ref HEAD)"
   if [[ -n "${RELEASE_BRANCH}" && -z "${FROM_NIGHTLY_RELEASE}" && "${current_branch}" != "${RELEASE_BRANCH}" ]]; then
     setup_upstream
     setup_branch
